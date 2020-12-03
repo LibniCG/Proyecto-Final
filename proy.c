@@ -41,7 +41,7 @@ void pruebas();
 void getInfo();
 void getInfoMBR(char *filename);
 void getInfoParticion(int inicio, char *filename);
-void getInfoDirectorio();
+void getInfoDirectorio(int dir);
 void openF (char *filename);
 int leeChar();
 char *hazLinea(char *base, unsigned long long dir);
@@ -155,7 +155,8 @@ void getInfo(){
     printf("\tNumero sectores del disco    %d \n", *info.sd);
 
     info.tam = (short int *)&map[22]; //Tamaño del FAT
-    printf("\tTamaño del FAT               %d \n", info.tam);
+    printf("\tTamaño del FAT               %d \n", *info.tam);
+    int tam = *info.tam;
     
     strcpy(info.ev, &map[43]); //Etiqueta de volumen
     printf("\tEtiqueta de volumen          %s \n", info.ev);
@@ -163,11 +164,15 @@ void getInfo(){
     strncpy(info.id, &map[0x36],5); //ID del Sistema
     printf("\tId Sistema                   %s \n\n", info.id);
 
-    /*int dirRaiz = (*info.sr + (info.tam * info.copias)) * (*info.sector);
+    int dirRaiz = (*info.sr + (tam * info.copias)) * (*info.sector);
     printf("\tDirectorio Raíz              0x%04x\n", dirRaiz);   
 
     int datos = dirRaiz + ((*info.re) * 32);
-    printf("\tInicio de Datos              0x%04x\n\n", datos); */
+    printf("\tInicio de Datos              0x%04x\n\n", datos); 
+
+    getchar();
+    system("clear");
+    getInfoDirectorio(0x141000);
 }
 
 void getInfoMBR(char *filename){
@@ -274,7 +279,6 @@ void getInfoMBR(char *filename){
         s = map[prInicio[j] + 0x1BE + 2] & 0x3F;
         c = map[prInicio[j] + 0x1BE + 2] & 0xC0; c<<=2; c |= map[prInicio[j] + 0x1BE + 3];
         prInicio[j] = ((c * NUMHEADS + h) * NUMSECTORS + (s - 1)) * TAMSECTOR;
-        //printf("Partition Extended Start: %02x\n\n", inicio);
         getInfoParticion(prInicio[j], filename);
     }else{ 
         getInfoParticion(prInicio[j], filename);
@@ -301,6 +305,7 @@ void getInfoParticion(int inicio, char *filename){
 
         info.tam = (short int *)&map[inicio + 22]; //Tamaño del FAT
         printf("\tTamaño del FAT               %d \n", *info.tam);
+        int tam = *info.tam;
 
         info.sd = (int *)&map[inicio + 32]; //Num sectores del disco
         printf("\tNumero sectores del disco    %d \n", *info.sd);
@@ -311,29 +316,36 @@ void getInfoParticion(int inicio, char *filename){
         strncpy(info.id, &map[inicio + 0x36], 5); //ID del Sistema
         printf("\tId Sistema                   %s \n\n", info.id); 
 
-        /*int dirRaiz = (*info.sr + (info.tam * info.copias)) * (*info.sector);
+        int dirRaiz = (*info.sr + (tam * info.copias)) * (*info.sector);
         printf("\tDirectorio Raíz              0x%04x\n", dirRaiz); 
 
         int datos = dirRaiz + ((*info.re) * 32);
-        printf("\tInicio de Datos              0x%04x\n\n", datos); */
+        printf("\tInicio de Datos              0x%04x\n\n", datos); 
     } else {
         printf("\n\tEsta partición está vacía. \n\n");
     }
+
+    getchar();
+    system("clear");
+    getInfoDirectorio(0x141000);
 }
 
-void getInfoDirectorio(){
-    /*int i; 
-    int tipo, cluster, tam; 
+void getInfoDirectorio(int d){
+    int i; 
+    int tipo;
+    short int cluster;
+    unsigned int tam; 
     char nombre[15] = "X";
+    char *dir = &map[d];
 
     printf("\t Nombre\t Tipo\t Cluster\t Tamaño\n\n");
     for(int i = 0; i < 4; i ++){
-        strcpy(nombre);
-        tipo = map[12 + i * 32];
-        cluster = *(short int *)&map[0x1a + i * 32];
-        tam =  *((int *)&map[0x1c + i * 32]);
+        strncpy(nombre, &dir[i*32],13);
+        tipo = dir[0xb + i * 32];
+        cluster = *(short int *)&dir[0x1a + i * 32];
+        tam =  *(unsigned int *)&dir[0x1c + i * 32];
         printf("\t %s\t %d\t %d\t %d\n", nombre, tipo, cluster, tam);
-    }*/
+    }
 }
 
 int getArchivo(char *filename){
